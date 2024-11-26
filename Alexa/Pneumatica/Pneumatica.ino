@@ -14,7 +14,7 @@ const char * password = "87654321";
 
 Espalexa Alexa;
 
-void SendToServer(const char * device, uint8_t state)
+void SendToServer(const char * device, const char * state)
 {
     WiFiClient Client;
     HTTPClient Http;
@@ -25,31 +25,36 @@ void SendToServer(const char * device, uint8_t state)
     Http.addHeader("Content-Type", "application/json");
     char Json[100];
 
-    sprintf(Json, "{\"device\":\"%s\", \"state\":\"%i%%\"}", device, state);
+    sprintf(Json, "{\"device\":\"%s\", \"state\":\"%s\"}", device, state);
     Http.POST(Json);
     Http.end();
 }
 
-void SendToArduino(uint8_t data)
+void Pistao(uint8_t State)
 {
-    uint8_t percent = Alexa.toPercent(data);
-    Serial.println(percent);
-    SendToServer("Barra", percent);
+    digitalWrite(0, (~State) & 1);
+    SendToServer("Pistao", State ? "ON" : "OFF");
 }
 
 void setup()
 {
     Serial.begin(9600);
 
-    WiFi.hostname("esp 5led");
+    pinMode(0, OUTPUT);
+    digitalWrite(0, HIGH);
+
+    WiFi.hostname("Esp Pneumática");
     WiFi.begin(ssid, password);
     while(WiFi.status() != WL_CONNECTED)
     {
         delay(500);
+        Serial.print(".");
     }
-    //WiFi.localIP()
+    
+    Serial.println("\nWiFi Connected");
+    Serial.println(WiFi.localIP());
 
-    Alexa.addDevice("Barra", SendToArduino);
+    Alexa.addDevice("Pistao", Pistao);
     Alexa.begin();
 }
 

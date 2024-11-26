@@ -9,8 +9,6 @@ const app = express();
 const PORT = 3000;
 let Data = []
 
-//22/11/2024, 15:29:05
-
 function ParseDate(DateString)
 {
     return new Date
@@ -38,6 +36,7 @@ app.use(bodyParser.json());
 
 app.get("/", async (req, res) =>
 {
+    let device = req.query.device;
     await getData();
     res.setHeader('Content-Type', 'text/html');
     let html = `<!DOCTYPE html>
@@ -45,10 +44,52 @@ app.get("/", async (req, res) =>
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Document</title>
+        <title>Alexa Automation Server</title>
+        <style>
+            body
+            {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+            table
+            {
+                background-color: #0f0f0f;
+                color: #f0f0f0;
+            }
+            td
+            {
+                color: #0f0f0f;
+            }
+            th
+            {
+                background-color: #202020;
+            }
+            th, td
+            {
+                text-align: center;
+                min-width: 80px;
+                padding-left: 5px;
+                padding-right: 5px;
+            }
+            .row0
+            {
+                background-color: #f0f0f0;
+            }
+            .row1
+            {
+                background-color: #c0c0c0;
+            }
+        </style>
     </head>
     <body>
         <h1>Dados dos dispositivos</h1>
+        <div style="display: flex; flex-direction: row; gap: 5px; align-items: center;">
+            <p>Dispositivo:</p>
+            <input type="text" id="device">
+            <button onclick="Redirect()">Buscar</button>
+        </div>
         <table>
             <thead>
                 <th>Dispositivo</th>
@@ -56,15 +97,22 @@ app.get("/", async (req, res) =>
                 <th>Data/Hora</th>
             </thead>
             <tbody>`;
+    if(device != undefined)
+    {
+        Data = Data.filter((item) =>
+        {
+            return item.device.toLowerCase().indexOf(device.toLowerCase()) >= 0;
+        })
+    }
     Data.sort((x, y) =>
     {
         const datex = ParseDate(x.timestamp);
         const datey = ParseDate(y.timestamp);
         return datey - datex;
-    }).forEach((item) =>
+    }).forEach((item, index) =>
     {
         html = html + `
-            <tr>
+            <tr class="row${index%2}">
                 <td>${item.device}</td>
                 <td>${item.state}</td>
                 <td>${item.timestamp}</td>
@@ -72,6 +120,18 @@ app.get("/", async (req, res) =>
     });
     html = html + `</tbody>
         </table>
+        <script>
+            function Redirect()
+            {
+                let path = "/";
+                let device = document.getElementById("device").value;
+                if(device !== "")
+                {
+                    path = \`/?device=\${device}\`
+                }
+                window.location.href = path;
+            }
+        </script>
     </body>
     </html>`;
     res.end(html);
